@@ -4,8 +4,10 @@ import pandas as pd
 import ta
 import feedparser
 import requests
+import plotly.graph_objects as go
 from textblob import TextBlob
 from dotenv import load_dotenv
+from streamlit_js_eval import streamlit_js_eval
 
 load_dotenv()
 
@@ -141,7 +143,43 @@ def analyze(symbol):
     avg_volume = volumes.iloc[-21:-1].mean()
     today_volume = volumes.iloc[-1]
     volume_ratio = today_volume / avg_volume if avg_volume > 0 else 0
-    return current, rsi, ma50, volume_ratio
+    return current, rsi, ma50, volume_ratio, hist
+
+# === CANDLESTICK CHART ===
+def make_candlestick_chart(symbol, hist):
+    ma50_series = hist['Close'].rolling(50).mean()
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Candlestick(
+        x=hist.index,
+        open=hist['Open'],
+        high=hist['High'],
+        low=hist['Low'],
+        close=hist['Close'],
+        name=symbol,
+        increasing_line_color='#1a7a3f',
+        decreasing_line_color='#a81c1c',
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=hist.index,
+        y=ma50_series,
+        line=dict(color='#1a4fa8', width=1.5),
+        name='50-MA',
+    ))
+
+    fig.update_layout(
+        height=350,
+        margin=dict(l=10, r=10, t=10, b=10),
+        xaxis_rangeslider_visible=False,
+        showlegend=False,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        yaxis=dict(side='right', gridcolor='#eee'),
+        xaxis=dict(gridcolor='#eee'),
+    )
+    return fig
 
 # === CRYPTO ===
 def fetch_crypto(coin_id):
@@ -153,15 +191,27 @@ def fetch_crypto(coin_id):
     except Exception:
         return None
 
+# === WATCHLIST (browser-saved, no login required) ===
+def load_watchlist():
+    saved = streamlit_js_eval(
+        js_expressions="localStorage.getItem('quorvex_watchlist')",
+        key="load_watchlist"
+    )
+    return saved
+
 # === INPUT SECTION ===
+saved_watchlist = load_watchlist()
+default_stocks = saved_watchlist if saved_watchlist else "AAPL, TSLA, NVDA, AMZN, SPY, XLK, XLE"
+
 col1, col2 = st.columns([2, 1])
 
 with col1:
     st.markdown("#### Stocks & ETFs")
     stock_input = st.text_input(
         "Enter stock/ETF tickers separated by commas",
-        value="AAPL, TSLA, NVDA, AMZN, SPY, XLK, XLE",
-        placeholder="e.g. AAPL, TSLA, SPY"
+        value=default_stocks,
+        placeholder="e.g. AAPL, TSLA, SPY",
+        key="stock_input_box"
     )
 
 with col2:
@@ -172,7 +222,18 @@ with col2:
         placeholder="e.g. bitcoin, ethereum, solana"
     )
 
-run = st.button("🚀 Run Analysis", type="primary", use_container_width=True)
+btn_col1, btn_col2 = st.columns([3, 1])
+with btn_col1:
+    run = st.button("🚀 Run Analysis", type="primary", use_container_width=True)
+with btn_col2:
+    save_clicked = st.button("💾 Save Watchlist", use_container_width=True)
+
+if save_clicked:
+    streamlit_js_eval(
+        js_expressions=f"localStorage.setItem('quorvex_watchlist', {stock_input!r})",
+        key="save_watchlist"
+    )
+    st.toast("Watchlist saved to this browser!", icon="✅")
 
 # === RUN ANALYSIS ===
 if run:
@@ -189,7 +250,7 @@ if run:
             if result is None:
                 st.warning(f"⚠️ Could not fetch data for **{symbol}** — check the ticker and try again.")
                 continue
-            price, rsi, ma50, volume_ratio = result
+            price, rsi, ma50, volume_ratio, hist = result
             badges = get_alert_badges(rsi, price, ma50, volume_ratio)
             sentiment = get_sentiment_html(symbol)
             st.markdown(f"""
@@ -204,6 +265,9 @@ if run:
                 {sentiment}
             </div>
             """, unsafe_allow_html=True)
+            with st.expander(f"📊 View {symbol} candlestick chart (3mo)"):
+                fig = make_candlestick_chart(symbol, hist)
+                st.plotly_chart(fig, use_container_width=True, key=f"chart_{symbol}")
 
     # --- CRYPTO ---
     if crypto_ids:

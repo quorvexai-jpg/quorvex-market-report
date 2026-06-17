@@ -6,3 +6,5 @@ textblob
 requests
 python-dotenv
 streamlit
+plotly
+streamlit-js-eval

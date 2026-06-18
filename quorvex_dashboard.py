@@ -201,7 +201,7 @@ def load_watchlist():
 
 # === INPUT SECTION ===
 saved_watchlist = load_watchlist()
-default_stocks = saved_watchlist if saved_watchlist else "AAPL, TSLA, NVDA, AMZN, SPY, XLK, XLE"
+default_stocks = saved_watchlist if saved_watchlist else ""
 
 col1, col2 = st.columns([2, 1])
 
@@ -218,7 +218,7 @@ with col2:
     st.markdown("#### Crypto")
     crypto_input = st.text_input(
         "Enter crypto CoinGecko IDs separated by commas",
-        value="bitcoin, ethereum",
+        value="",
         placeholder="e.g. bitcoin, ethereum, solana"
     )
 

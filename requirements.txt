@@ -1,4 +1,4 @@
-yfinance
+yfinance==0.2.58
 pandas
 ta
 feedparser
@@ -9,4 +9,3 @@ streamlit
 plotly
 streamlit-js-eval
 supabase==2.4.0
-websockets>=13.0

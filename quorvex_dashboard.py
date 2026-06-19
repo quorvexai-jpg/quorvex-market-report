@@ -131,7 +131,10 @@ def get_sentiment_html(symbol):
 # === ANALYZE ===
 def analyze(symbol):
     ticker = yf.Ticker(symbol)
-    hist = ticker.history(period='3mo')
+    try:
+        hist = ticker.history(period='3mo')
+    except Exception:
+        return "rate_limited"
     if hist.empty or len(hist) < 10:
         return None
     closes = hist['Close']
@@ -270,8 +273,11 @@ if run:
         for symbol in stock_symbols:
             with st.spinner(f"Fetching {symbol}..."):
                 result = analyze(symbol)
+            if result == "rate limited":
+                st.warning(f"⚠️ Cahoo Finance is currently rate-limiting requests. Please wait a moment and try again for **{symbol}** .")
+                continue
             if result is None:
-                st.warning(f"⚠️ Could not fetch data for **{symbol}** — check the ticker and try again.")
+                st.warning(f"⚠️ Could not fetch data  for **{symbol}** - check the ticker and try again.")
                 continue
             price, rsi, ma50, volume_ratio, hist = result
             badges = get_alert_badges(rsi, price, ma50, volume_ratio)

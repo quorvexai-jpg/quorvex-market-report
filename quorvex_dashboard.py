@@ -222,6 +222,7 @@ def save_watchlist(stocks, crypto):
         }).execute()
         return True
     except Exception as e:
+        st.error(f"Save failed: {e}")
         return False
 
 # === INPUT SECTION ===

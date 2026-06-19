@@ -8,4 +8,4 @@ python-dotenv
 streamlit
 plotly
 streamlit-js-eval
-supabase
+supabase>=2.10.0

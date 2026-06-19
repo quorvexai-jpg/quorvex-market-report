@@ -222,6 +222,8 @@ def save_watchlist(stocks, crypto):
         }).execute()
         return True
     except Exception as e:
+        st.error(f"DEBUG SAVE ERROR: {e}")
+        st.error(f"DEBUG URL USED: {supabase.supabase_url}")
         return False
 
 # === INPUT SECTION ===

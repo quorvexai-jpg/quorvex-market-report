@@ -200,7 +200,7 @@ from supabase import create_client
 def get_supabase():
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
-    st.write(f"DEBUG URL: {url"})
+    st.write(f"DEBUG URL: {url}")
     return create_client(url, key)
 
 supabase = get_supabase()

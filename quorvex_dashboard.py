@@ -7,7 +7,6 @@ import requests
 import plotly.graph_objects as go
 from textblob import TextBlob
 from dotenv import load_dotenv
-from streamlit_js_eval import streamlit_js_eval
 
 load_dotenv()
 
@@ -191,17 +190,41 @@ def fetch_crypto(coin_id):
     except Exception:
         return None
 
-# === WATCHLIST (browser-saved, no login required) ===
+# === SUPABASE CLIENT ===
+from supabase import create_client
+
+@st.cache_resource
+def get_supabase():
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+supabase = get_supabase()
+
+# === WATCHLIST (Supabase-backed, single shared watchlist for now) ===
 def load_watchlist():
-    saved = streamlit_js_eval(
-        js_expressions="localStorage.getItem('quorvex_watchlist')",
-        key="load_watchlist"
-    )
-    return saved
+    try:
+        response = supabase.table("watchlists").select("*").eq("id", "default").execute()
+        if response.data:
+            return response.data[0]["stocks"], response.data[0]["crypto"]
+        return "", ""
+    except Exception:
+        return "", ""
+def save_watchlist(stocks, crypto):
+    try:
+        supabase.table("watchlists").upsert({
+            "id": "default",
+            "stocks": stocks,
+            "crypto": crypto
+        }).execute()
+        return True
+    except Exception as e:
+        return False
 
 # === INPUT SECTION ===
-saved_watchlist = load_watchlist()
-default_stocks = saved_watchlist if saved_watchlist else ""
+saved_stocks, saved_crypto = load_watchlist()
+default_stocks = saved_stocks if saved_stocks else ""
+default_crypto = saved_crypto if saved_crypto else ""
 
 col1, col2 = st.columns([2, 1])
 
@@ -218,7 +241,7 @@ with col2:
     st.markdown("#### Crypto")
     crypto_input = st.text_input(
         "Enter crypto CoinGecko IDs separated by commas",
-        value="",
+        value=default_crypto,
         placeholder="e.g. bitcoin, ethereum, solana"
     )
 
@@ -229,11 +252,11 @@ with btn_col2:
     save_clicked = st.button("💾 Save Watchlist", use_container_width=True)
 
 if save_clicked:
-    streamlit_js_eval(
-        js_expressions=f"localStorage.setItem('quorvex_watchlist', {stock_input!r})",
-        key="save_watchlist"
-    )
-    st.toast("Watchlist saved to this browser!", icon="✅")
+    success = save_watchlist(stock_input, crypto_input)
+    if success:
+        st.toast("Watchlist saved!", icon="✅")
+    else:
+        st.toast("Couldn't save watchlist - try again.", icon="⚠️")
 
 # === RUN ANALYSIS ===
 if run:

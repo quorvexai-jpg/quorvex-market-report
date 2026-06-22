@@ -7,5 +7,3 @@ requests
 python-dotenv
 streamlit
 plotly
-streamlit-js-eval
-supabase>=2.10.0

@@ -193,42 +193,9 @@ def fetch_crypto(coin_id):
     except Exception:
         return None
 
-# === SUPABASE CLIENT ===
-from supabase import create_client
-
-@st.cache_resource
-def get_supabase():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
-
-supabase = get_supabase()
-
-# === WATCHLIST (Supabase-backed, single shared watchlist for now) ===
-def load_watchlist():
-    try:
-        response = supabase.table("watchlists").select("*").eq("id", "default").execute()
-        if response.data:
-            return response.data[0]["stocks"], response.data[0]["crypto"]
-        return "", ""
-    except Exception:
-        return "", ""
-def save_watchlist(stocks, crypto):
-    try:
-        supabase.table("watchlists").upsert({
-            "id": "default",
-            "stocks": stocks,
-            "crypto": crypto
-        }).execute()
-        return True
-    except Exception as e:
-        st.error(f"Save failed: {e}")
-        return False
-
 # === INPUT SECTION ===
-saved_stocks, saved_crypto = load_watchlist()
-default_stocks = saved_stocks if saved_stocks else ""
-default_crypto = saved_crypto if saved_crypto else ""
+default_stocks = ""
+default_crypto = ""
 
 col1, col2 = st.columns([2, 1])
 
@@ -249,18 +216,7 @@ with col2:
         placeholder="e.g. bitcoin, ethereum, solana"
     )
 
-btn_col1, btn_col2 = st.columns([3, 1])
-with btn_col1:
-    run = st.button("🚀 Run Analysis", type="primary", use_container_width=True)
-with btn_col2:
-    save_clicked = st.button("💾 Save Watchlist", use_container_width=True)
-
-if save_clicked:
-    success = save_watchlist(stock_input, crypto_input)
-    if success:
-        st.toast("Watchlist saved!", icon="✅")
-    else:
-        st.toast("Couldn't save watchlist - try again.", icon="⚠️")
+run = st.button("🚀 Run Analysis", type="primary", use_container_width=True)
 
 # === RUN ANALYSIS ===
 if run:

@@ -216,7 +216,24 @@ with col2:
         placeholder="e.g. bitcoin, ethereum, solana"
     )
 
-run = st.button("🚀 Run Analysis", type="primary", use_container_width=True)
+run_clicked = st.button("🚀 Run Analysis", type="primary", use_container_width=True)
+
+if run_clicked:
+    st.session_state.has_run = True
+
+run = st.session_state.get("has_run", False)
+
+# === CHART EXPAND/COLLAPSE STATE ===
+if "charts_expanded" not in st.session_state:
+    st.session_state.charts_expanded = False
+
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("🔽 Expand All Charts", use_container_width=True):
+        st.session_state.charts_expanded = True
+with col2:
+    if st.button("🔼 Collapse All Charts", use_container_width=True):
+        st.session_state.charts_expanded = False
 
 # === RUN ANALYSIS ===
 if run:
@@ -251,7 +268,7 @@ if run:
                 {sentiment}
             </div>
             """, unsafe_allow_html=True)
-            with st.expander(f"📊 View {symbol} candlestick chart (3mo)"):
+            with st.expander(f"📊 View {symbol} candlestick chart (3mo)", expanded=st.session_state.charts_expanded):
                 fig = make_candlestick_chart(symbol, hist)
                 st.plotly_chart(fig, use_container_width=True, key=f"chart_{symbol}")
 

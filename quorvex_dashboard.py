@@ -6,9 +6,6 @@ import feedparser
 import requests
 import plotly.graph_objects as go
 from textblob import TextBlob
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # === PAGE CONFIG ===
 st.set_page_config(
